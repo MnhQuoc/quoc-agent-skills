@@ -1,16 +1,57 @@
-# React + Vite
+# Skill Manager (app/)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Giao diện React (Vite) để quản lý skill của `quoc-agent-skills` qua trình duyệt, thay vì sửa tay từng file `skills/*/SKILL.md`.
 
-Currently, two official plugins are available:
+Dữ liệu skill được lưu trong **MongoDB** qua API ở `../api/server.js` (xem `../README.md` ở gốc repo để biết chi tiết kiến trúc: MongoDB là nguồn dữ liệu chính, tự đồng bộ hai chiều với `skills/` trên đĩa và với `~/.cursor/skills/`).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Chạy dev
 
-## React Compiler
+Cần 2 tiến trình chạy song song (từ thư mục gốc `quoc-agent-skills/`):
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+# Terminal 1 - API (kết nối MongoDB, mặc định cổng 4322)
+npm run api
 
-## Expanding the Oxlint configuration
+# Terminal 2 - giao diện React (thư mục app/, mặc định cổng 5173)
+cd app
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Mở địa chỉ Vite in ra (ví dụ `http://localhost:5173`). Request `/api/*` được Vite proxy sang API ở `http://localhost:4322` (xem `vite.config.js`), nên không cần cấu hình CORS thêm khi phát triển.
+
+> Cần MongoDB đang chạy (mặc định `mongodb://localhost:27017/quoc-agent-skills`, cấu hình qua biến `MONGODB_URI` trong file `.env` ở thư mục gốc).
+
+## Tính năng
+
+- **List** — danh sách toàn bộ skill lấy từ MongoDB, có nút Refresh.
+- **Search** — tìm theo tên, slug hoặc mô tả (debounce khi gõ).
+- **Create** — tạo skill mới (tên, mô tả, nội dung markdown không bắt buộc). Khi tạo, backend tự:
+  - Lưu vào MongoDB.
+  - Ghi ra `skills/<slug>/SKILL.md` trên đĩa (repo nguồn).
+  - Cài luôn vào `~/.cursor/skills/<slug>/SKILL.md` để dùng được ngay qua `/<slug>` trong Cursor.
+- **Xem chi tiết** — click vào một skill (ở tab List hoặc Search) để mở modal xem đầy đủ mô tả và nội dung `SKILL.md`.
+- **Xóa** — không có nút xóa trên UI; xóa folder `skills/<slug>` trực tiếp trên đĩa (VD trong VS Code Explorer) là đủ, backend tự phát hiện và xóa khỏi MongoDB (+ khỏi `~/.cursor/skills`) trong vài giây.
+
+## Cấu trúc chính
+
+```
+app/src/
+├── api.js                     # gọi API /api/skills (fetch/search/create)
+├── App.jsx                    # 3 tab: List / Search / Create
+└── components/
+    ├── SkillsList.jsx         # tab List
+    ├── SkillSearch.jsx        # tab Search
+    ├── SkillForm.jsx          # tab Create
+    ├── SkillCard.jsx          # card hiển thị 1 skill, click để mở SkillDetail
+    └── SkillDetail.jsx        # modal xem chi tiết skill
+```
+
+## Build production
+
+```bash
+npm run build   # xuất ra app/dist
+npm run preview # xem thử bản build
+```
+
+Ứng dụng build ra là 1 SPA tĩnh — vẫn cần API (`npm run api` ở thư mục gốc) chạy và có thể truy cập được để gọi `/api/skills`.
