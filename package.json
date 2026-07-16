@@ -5,6 +5,14 @@
   "description": "Personal agent skills + local mini skills.sh-style browsing page",
   "scripts": {
     "generate": "node scripts/generate-manifest.js",
-    "start": "npm run generate && node server.js"
+    "start": "npm run generate && node server.js",
+    "api": "node api/server.js",
+    "migrate": "node scripts/migrate-to-mongo.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.2",
+    "mongoose": "^9.7.4"
   }
 }
