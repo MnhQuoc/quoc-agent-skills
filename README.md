@@ -1,6 +1,6 @@
 # quoc-agent-skills
 
-Bộ **Agent Skills** cá nhân của tôi, dùng chung cho nhiều project và nhiều AI coding agent (Cursor, Claude Code, Codex, v.v.) theo chuẩn [Agent Skills Specification](https://agentskills.io) — tương tự cách [vercel-labs/skills](https://github.com/vercel-labs/skills) tổ chức skill.
+Bộ **Agent Skills** cá nhân của tôi, dùng chung cho nhiều project và nhiều AI coding agent (Cursor, Claude Code, Codex, v.v.) theo chuẩn [Agent Skills Specification](https://agentskills.io) 
 
 Mỗi skill là một thư mục trong `skills/` chứa file `SKILL.md` với YAML frontmatter (`name`, `description`) + nội dung hướng dẫn cho agent.
 
@@ -47,7 +47,7 @@ npx skills add MnhQuoc/quoc-agent-skills --list
 
 CLI tự phát hiện agent đang cài trên máy (Cursor, Claude Code, Codex...) và copy/symlink `SKILL.md` vào đúng thư mục của agent đó (ví dụ Cursor: `.agents/skills/` ở project, `~/.cursor/skills/` ở global).
 
-> **Lưu ý (repo private):** vì repo này là private, máy nào chạy `npx skills add` cũng cần đã đăng nhập Git với quyền truy cập repo (SSH key hoặc Git credential có sẵn), tương tự như `git clone` một repo private bình thường.
+
 
 ### Cách 2 — copy thủ công (không cần cài gì thêm)
 
