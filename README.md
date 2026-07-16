@@ -24,35 +24,37 @@ Mỗi skill là một thư mục trong `skills/` chứa file `SKILL.md` với YA
 Cài một skill cụ thể vào project hiện tại:
 
 ```bash
-npx skills add <github-username>/quoc-agent-skills --skill backend
+npx skills add MnhQuoc/quoc-agent-skills --skill backend
 ```
 
 Cài toàn bộ skill vào project:
 
 ```bash
-npx skills add <github-username>/quoc-agent-skills --all
+npx skills add MnhQuoc/quoc-agent-skills --all
 ```
 
 Cài toàn bộ skill dùng chung cho mọi project (global, không cần lặp lại mỗi project):
 
 ```bash
-npx skills add <github-username>/quoc-agent-skills --all -g
+npx skills add MnhQuoc/quoc-agent-skills --all -g
 ```
 
 Xem trước danh sách skill mà không cài:
 
 ```bash
-npx skills add <github-username>/quoc-agent-skills --list
+npx skills add MnhQuoc/quoc-agent-skills --list
 ```
 
 CLI tự phát hiện agent đang cài trên máy (Cursor, Claude Code, Codex...) và copy/symlink `SKILL.md` vào đúng thư mục của agent đó (ví dụ Cursor: `.agents/skills/` ở project, `~/.cursor/skills/` ở global).
+
+> **Lưu ý (repo private):** vì repo này là private, máy nào chạy `npx skills add` cũng cần đã đăng nhập Git với quyền truy cập repo (SSH key hoặc Git credential có sẵn), tương tự như `git clone` một repo private bình thường.
 
 ### Cách 2 — copy thủ công (không cần cài gì thêm)
 
 Clone repo rồi copy thư mục skill cần dùng vào đúng nơi agent của bạn đọc skill, ví dụ với Cursor:
 
 ```bash
-git clone https://github.com/<github-username>/quoc-agent-skills.git
+git clone https://github.com/MnhQuoc/quoc-agent-skills.git
 cp -r quoc-agent-skills/skills/backend  ./.cursor/skills/backend   # theo project
 # hoặc
 cp -r quoc-agent-skills/skills/backend  ~/.cursor/skills/backend   # dùng chung mọi project
