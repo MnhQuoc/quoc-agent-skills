@@ -8,7 +8,7 @@ Mỗi skill là một thư mục trong `skills/` chứa file `SKILL.md` với YA
 
 ## Xem danh sách skill dạng trang web (local)
 
-Repo này có một trang mini kiểu [skills.sh](https://skills.sh), chạy ngay trên máy bạn, tự đọc dữ liệu từ `skills/*/SKILL.md`:
+Chạy trang web với localhost
 
 ```bash
 npm start
