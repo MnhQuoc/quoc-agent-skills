@@ -1,0 +1,10 @@
+{
+  "name": "quoc-agent-skills",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Personal agent skills + local mini skills.sh-style browsing page",
+  "scripts": {
+    "generate": "node scripts/generate-manifest.js",
+    "start": "npm run generate && node server.js"
+  }
+}

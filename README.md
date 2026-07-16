@@ -2,7 +2,19 @@
 
 Bộ **Agent Skills** cá nhân của tôi, dùng chung cho nhiều project và nhiều AI coding agent (Cursor, Claude Code, Codex, v.v.) theo chuẩn [Agent Skills Specification](https://agentskills.io) 
 
+[![Skills](https://img.shields.io/badge/▲_Skills-6-171717?style=flat-square)](http://localhost:4321)
+
 Mỗi skill là một thư mục trong `skills/` chứa file `SKILL.md` với YAML frontmatter (`name`, `description`) + nội dung hướng dẫn cho agent.
+
+## Xem danh sách skill dạng trang web (local)
+
+Repo này có một trang mini kiểu [skills.sh](https://skills.sh), chạy ngay trên máy bạn, tự đọc dữ liệu từ `skills/*/SKILL.md`:
+
+```bash
+npm start
+```
+
+Sau đó mở **http://localhost:4321** trong trình duyệt. Mỗi khi thêm/sửa skill, chạy lại `npm start` (hoặc `npm run generate`) để cập nhật danh sách.
 
 ## Danh sách skill
 
@@ -64,7 +76,7 @@ cp -r quoc-agent-skills/skills/backend  ~/.cursor/skills/backend   # dùng chung
 
 1. Tạo thư mục `skills/<ten-skill>/SKILL.md`.
 2. Frontmatter bắt buộc có `name` và `description` (description nên nói rõ **khi nào** agent nên dùng skill này).
-3. Cập nhật bảng danh sách skill ở trên.
+3. Cập nhật bảng danh sách skill ở trên. Trang web local (`npm start`) tự đọc lại `skills/` nên không cần sửa gì thêm ở đó.
 4. Commit & push.
 
 ```markdown

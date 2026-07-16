@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>quoc-agent-skills — Agent Skills</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <span class="brand">▲ quoc-agent-skills</span>
+      <a class="github-link" href="https://github.com/MnhQuoc/quoc-agent-skills" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>quoc-agent-skills</h1>
+      <p class="subtitle">Bộ Agent Skills cá nhân — cài lại ở bất kỳ project nào, dùng cho Cursor, Claude Code, Codex và các agent khác.</p>
+
+      <div class="install-box">
+        <code id="install-cmd">npx skills add MnhQuoc/quoc-agent-skills --all</code>
+        <button class="copy-btn" data-copy="npx skills add MnhQuoc/quoc-agent-skills --all">Copy</button>
+      </div>
+
+      <div class="badge-row" id="badge-row"></div>
+    </section>
+
+    <section>
+      <h2 class="section-title">Skills</h2>
+      <div id="skills-list" class="skills-grid">
+        <p class="loading">Đang tải danh sách skill…</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Chạy local bằng <code>npm start</code> · Nguồn: <code>skills/*/SKILL.md</code></p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
