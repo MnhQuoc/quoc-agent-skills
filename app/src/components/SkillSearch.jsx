@@ -33,7 +33,7 @@ export default function SkillSearch() {
       <div className="input-group">
         <input
           type="text"
-          placeholder="Tìm theo tên, slug hoặc mô tả..."
+          placeholder="Tìm theo tên hoặc slug..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           style={{ flex: 1 }}
