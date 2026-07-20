@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "backend": {
+      "source": "MnhQuoc/quoc-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/backend/SKILL.md",
+      "computedHash": "181e2288994106d087b43654b91b1d5e49f9858effad0bf40de36f174ed45a1a"
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 Giao diện React (Vite) để quản lý skill của `quoc-agent-skills` qua trình duyệt, thay vì sửa tay từng file `skills/*/SKILL.md`.
 
-Dữ liệu skill được lưu trong **MongoDB** qua API ở `../api/server.js` (xem `../README.md` ở gốc repo để biết chi tiết kiến trúc: MongoDB là nguồn dữ liệu chính, tự đồng bộ hai chiều với `skills/` trên đĩa và với `~/.cursor/skills/`).
+Dữ liệu skill được lưu trong **MongoDB** qua API ở `../api/server.js` (xem `../README.md` ở gốc repo để biết chi tiết kiến trúc: MongoDB là nguồn dữ liệu chính, tự đồng bộ hai chiều với `skills/` trên đĩa và với `.agents/skills/` trong project).
 
 ## Chạy dev
 
@@ -29,9 +29,10 @@ Mở địa chỉ Vite in ra (ví dụ `http://localhost:5173`). Request `/api/*
 - **Create** — tạo skill mới (tên, mô tả, nội dung markdown không bắt buộc). Khi tạo, backend tự:
   - Lưu vào MongoDB.
   - Ghi ra `skills/<slug>/SKILL.md` trên đĩa (repo nguồn).
-  - Cài luôn vào `~/.cursor/skills/<slug>/SKILL.md` để dùng được ngay qua `/<slug>` trong Cursor.
+  - Cài luôn vào `.agents/skills/<slug>/SKILL.md` (project-local) để dùng được ngay qua `/<slug>` trong repo này.
 - **Xem chi tiết** — click vào một skill (ở tab List hoặc Search) để mở modal xem đầy đủ mô tả và nội dung `SKILL.md`.
-- **Xóa** — không có nút xóa trên UI; xóa folder `skills/<slug>` trực tiếp trên đĩa (VD trong VS Code Explorer) là đủ, backend tự phát hiện và xóa khỏi MongoDB (+ khỏi `~/.cursor/skills`) trong vài giây.
+- **Xóa** — không có nút xóa trên UI; xóa folder `skills/<slug>` trực tiếp trên đĩa (VD trong VS Code Explorer) là đủ, backend tự phát hiện và xóa khỏi MongoDB (+ khỏi `.agents/skills/`) trong vài giây.
+- **Đồng bộ skill có sẵn** — chạy `npm run sync-cursor` ở thư mục gốc repo để copy toàn bộ `skills/` sang `.agents/skills/` (dùng sau khi clone hoặc sửa tay file trong `skills/`).
 
 ## Cấu trúc chính
 

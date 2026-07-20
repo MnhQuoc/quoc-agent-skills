@@ -50,7 +50,22 @@ feature | bugfix | refactor | docs
 |---------|---------|
 
 ## Open questions (nếu còn)
-- ...
+
+Mỗi câu hỏi **bắt buộc** dùng format sau (để web hub parse được nút A/B/C/D):
+
+**Câu 1 – {nội dung câu hỏi}**
+- **A.** {lựa chọn A}
+- **B.** {lựa chọn B}
+- **C.** {lựa chọn C}
+
+Hoặc format tương đương:
+
+**Câu hỏi 1 – {nội dung câu hỏi}**
+**A)** {lựa chọn A}
+**B)** {lựa chọn B}
+**C)** {lựa chọn C}
+
+(Tối đa 3 câu. User chọn A/B/C hoặc D tự nhập trên web hub.)
 
 ## Handoff → skill-plan
 **Sẵn sàng plan:** ✅ | ⚠️ Cần làm rõ thêm

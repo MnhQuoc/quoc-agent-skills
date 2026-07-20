@@ -10,6 +10,8 @@ const cors = require("cors");
 
 const { connectDB } = require("../lib/db");
 const { listSkills, getSkill, searchSkills, createSkill, SkillError } = require("../lib/skills");
+const { runSkill, WORKFLOW_SKILLS } = require("../lib/skillRunner");
+const { getTodayUsage, getRecentLogs } = require("../lib/tokenUsage");
 const { watchSkillsDir, syncDeletedSkills } = require("../lib/watchSkills");
 const { generateManifest } = require("../scripts/generate-manifest");
 
@@ -59,6 +61,40 @@ app.post("/api/skills", async (req, res) => {
     const skill = await createSkill(req.body || {});
     await refreshManifest();
     res.status(201).json(skill);
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+app.get("/api/workflow/skills", (_req, res) => {
+  res.json(WORKFLOW_SKILLS);
+});
+
+app.post("/api/workflow/run", async (req, res) => {
+  const { skillSlug, userPrompt, context, cwd } = req.body || {};
+  if (!skillSlug) {
+    return res.status(400).json({ error: "skillSlug là bắt buộc" });
+  }
+  try {
+    const result = await runSkill({ skillSlug, userPrompt, context, cwd });
+    res.json(result);
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+app.get("/api/token-usage/today", async (_req, res) => {
+  try {
+    res.json(await getTodayUsage());
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+app.get("/api/token-usage/recent", async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+  try {
+    res.json(await getRecentLogs(limit));
   } catch (err) {
     handleError(res, err);
   }
