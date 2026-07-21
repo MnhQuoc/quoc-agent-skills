@@ -1,30 +1,30 @@
 ---
 name: frontend
-description: Các kỹ năng và công cụ phát triển giao diện Frontend (demo users list, gọi API) trong .claude/frontend. Dùng khi user yêu cầu làm việc với UI, giao diện, hoặc gõ /frontend.
+description: Làm việc với code frontend/UI (component, gọi API, state, style) theo đúng framework và convention của project đang mở — không giả định React/Vue/thư viện cụ thể. Dùng khi user yêu cầu làm UI/giao diện/component, hoặc gõ /frontend.
 ---
 
 # Frontend
 
-## Mục đích
-Skill frontend nhỏ dùng để demo và thử nghiệm: một trang tĩnh hiển thị danh sách users và một module gọi API.
+## Mục tiêu
+Implement/sửa UI đúng theo framework và convention **đã có sẵn trong project hiện tại**, không áp đặt stack cố định.
 
-## Các file chính (thư mục `.claude/frontend`)
-- `index.html` — trang tĩnh hiển thị danh sách users, include `userService.js` + `users-list.js`.
-- `userService.js` — module gọi API (mặc định: `/api/users`, fallback `https://jsonplaceholder.typicode.com/users`).
-- `users-list.js` — logic lấy dữ liệu và render vào DOM (an toàn XSS, dùng `textContent`).
-- `skills-hooks-demo.html` — demo React (CDN + Babel standalone) đầy đủ CRUD cho Skill Manager: list, search, create qua `/api/skills`. Độc lập với 3 file trên, không cần build step.
+## Quy trình
 
-## Chạy nhanh
-- Cách chuẩn: chạy backend (`npm start` trong `.claude/backend`) — server Express serve sẵn 2 file tĩnh này tại `http://localhost:3000/` và `http://localhost:3000/skills-hooks-demo.html`, đồng thời proxy đúng các route `/api/*`.
-- Hoặc mở trực tiếp file `.claude/frontend/index.html` trong trình duyệt (chỉ dùng được nếu `userService.js` đang fallback sang jsonplaceholder, vì không có server nào phục vụ `/api/users`).
+### Bước 1 — Nhận diện stack của project
+1. Đọc `package.json` để biết framework (React/Vue/Svelte/Angular/Next/Nuxt hoặc HTML/JS thuần) và bundler (Vite/Webpack/CRA...).
+2. Tìm cách project hiện tại gọi API (fetch wrapper, axios instance, React Query/SWR hook, service layer riêng) — tái dùng, không viết cách gọi API mới song song.
+3. Tìm hệ thống style đang dùng (CSS module, Tailwind, styled-components, SCSS, class thuần) và theme/token màu sắc nếu có.
 
-## Tùy chỉnh API
-- Sửa URL trong `.claude/frontend/userService.js` để gọi API backend của dự án.
-- Nếu cần authentication, thêm header hoặc wrapper trong `userService.js`.
+### Bước 2 — Theo convention hiện có
+1. Đặt component/hook mới cùng chỗ và cùng cấu trúc với các component tương tự đã có trong project.
+2. Tái dùng component dùng chung (button, input, modal...) thay vì viết lại từ đầu.
+3. Nếu project chưa có frontend nào (thư mục trống/mới) → hỏi user muốn dùng framework gì trước khi khởi tạo, đừng tự chọn.
 
-## Tích hợp vào dự án
-- Đưa `userService.js` và `users-list.js` vào hệ thống frontend hiện tại (React/Vue/Next) và chuyển logic render thành component.
+### Bước 3 — Nguyên tắc UI chung
+- Không dùng `innerHTML`/`dangerouslySetInnerHTML` với dữ liệu chưa escape (tránh XSS) — ưu tiên `textContent` hoặc binding của framework.
+- Xử lý đầy đủ 3 trạng thái: loading / error / empty cho mọi màn hình gọi API.
+- Accessibility cơ bản: `alt` cho ảnh, `label` cho input, có thể điều khiển bằng keyboard, contrast màu đủ đọc.
+- Responsive theo breakpoint project đang dùng (nếu có sẵn), không hardcode kích thước cố định trừ khi cần.
 
 ## Gợi ý mở rộng
-- Thêm pagination, tìm kiếm, xử lý lỗi nâng cao, hoặc UI library (Bootstrap/Material).
-- Nếu muốn chuyển thành React/Next, hoặc cần gọi API có xác thực, hỏi user rồi triển khai.
+Nếu cần thêm pagination, tìm kiếm, xử lý lỗi nâng cao, hoặc chuyển đổi giữa framework — hỏi rõ yêu cầu trước khi triển khai.

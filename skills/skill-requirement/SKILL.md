@@ -51,21 +51,14 @@ feature | bugfix | refactor | docs
 
 ## Open questions (nếu còn)
 
-Mỗi câu hỏi **bắt buộc** dùng format sau (để web hub parse được nút A/B/C/D):
+Nếu agent có công cụ hỏi trắc nghiệm (ví dụ **AskQuestion** trong Cursor) → dùng luôn để hỏi trực tiếp, không cần chờ user đọc document.
+
+Nếu không có công cụ đó (agent khác, hoặc chạy không tương tác) → liệt kê dưới dạng markdown đơn giản để user trả lời bằng text tự do:
 
 **Câu 1 – {nội dung câu hỏi}**
-- **A.** {lựa chọn A}
-- **B.** {lựa chọn B}
-- **C.** {lựa chọn C}
+- Gợi ý: {lựa chọn A} / {lựa chọn B} / {lựa chọn C}
 
-Hoặc format tương đương:
-
-**Câu hỏi 1 – {nội dung câu hỏi}**
-**A)** {lựa chọn A}
-**B)** {lựa chọn B}
-**C)** {lựa chọn C}
-
-(Tối đa 3 câu. User chọn A/B/C hoặc D tự nhập trên web hub.)
+(Tối đa 3 câu, ưu tiên câu ảnh hưởng nhiều nhất tới phạm vi/kiến trúc.)
 
 ## Handoff → skill-plan
 **Sẵn sàng plan:** ✅ | ⚠️ Cần làm rõ thêm

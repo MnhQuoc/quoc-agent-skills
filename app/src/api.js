@@ -23,3 +23,11 @@ export function createSkill({ name, description, content }) {
     body: JSON.stringify({ name, description, content }),
   }).then(handleResponse);
 }
+
+export function fetchTodayUsage() {
+  return fetch("/api/token-usage/today").then(handleResponse);
+}
+
+export function fetchRecentLogs(limit = 10) {
+  return fetch(`/api/token-usage/recent?limit=${limit}`).then(handleResponse);
+}

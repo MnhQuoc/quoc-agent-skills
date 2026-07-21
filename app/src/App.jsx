@@ -2,12 +2,14 @@ import { useState } from "react";
 import SkillsList from "./components/SkillsList";
 import SkillSearch from "./components/SkillSearch";
 import SkillForm from "./components/SkillForm";
+import TokenUsage from "./components/TokenUsage";
 import "./App.css";
 
 const TABS = [
   { id: "list", label: "📚 List", Component: SkillsList },
   { id: "search", label: "🔍 Search", Component: SkillSearch },
   { id: "create", label: "➕ Create", Component: SkillForm },
+  { id: "tokens", label: "📊 Token", Component: TokenUsage },
 ];
 
 export default function App() {

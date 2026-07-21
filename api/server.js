@@ -11,7 +11,7 @@ const cors = require("cors");
 const { connectDB } = require("../lib/db");
 const { listSkills, getSkill, searchSkills, createSkill, SkillError } = require("../lib/skills");
 const { runSkill, WORKFLOW_SKILLS } = require("../lib/skillRunner");
-const { getTodayUsage, getRecentLogs } = require("../lib/tokenUsage");
+const { getTodayUsage, getRecentLogs, logCursorIdeUsage } = require("../lib/tokenUsage");
 const { watchSkillsDir, syncDeletedSkills } = require("../lib/watchSkills");
 const { generateManifest } = require("../scripts/generate-manifest");
 
@@ -86,6 +86,30 @@ app.post("/api/workflow/run", async (req, res) => {
 app.get("/api/token-usage/today", async (_req, res) => {
   try {
     res.json(await getTodayUsage());
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+// Nhận báo cáo token từ hook Cursor IDE (.cursor/hooks/token-report.js) khi user chạy
+// skill/chat trực tiếp trong Cursor, không qua @cursor/sdk. Token ở đây là ƯỚC LƯỢNG
+// (đếm bằng tokenizer trên text prompt/response lấy từ transcript), không phải số billing thật,
+// vì Cursor hooks không expose usage thật cho hook script.
+app.post("/api/token-usage/log", async (req, res) => {
+  const { skillSlug, promptText, responseText, status, model, conversationId } = req.body || {};
+  if (!promptText && !responseText) {
+    return res.status(400).json({ error: "promptText hoặc responseText là bắt buộc" });
+  }
+  try {
+    const log = await logCursorIdeUsage({
+      skillSlug,
+      promptText,
+      responseText,
+      status,
+      model,
+      conversationId,
+    });
+    res.status(201).json({ id: String(log._id), totalTokens: log.totalTokens });
   } catch (err) {
     handleError(res, err);
   }
