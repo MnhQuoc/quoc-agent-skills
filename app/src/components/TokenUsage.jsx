@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchBillingSessions, fetchRecentSessions, fetchTodayUsage } from "../api";
+import { downloadBillingCsv, fetchBillingSessions, fetchRecentSessions, fetchTodayUsage } from "../api";
 
 function formatNumber(n) {
   return new Intl.NumberFormat("vi-VN").format(n || 0);
@@ -16,32 +16,34 @@ function formatDateTime(value, { withSeconds = false } = {}) {
   }).format(new Date(value));
 }
 
-function getSessionQueryItems(session) {
-  const events = (session.userQueryEvents || []).filter((row) => row?.text);
-  const queries = (session.userQueries || []).filter(Boolean);
-  // Events từ hook beforeSubmitPrompt là UTF-8 đúng; transcript hay bị mojibake.
-  const sourceTexts = events.length
-    ? events.map((row) => row.text)
-    : queries.length
-      ? queries
-      : [];
-
-  if (!sourceTexts.length) {
-    const fallback = session.sessionTitle || session.promptPreview;
-    return fallback ? [{ text: fallback, at: null }] : [];
-  }
-
-  const eventAtByText = new Map();
+function dedupeQueryEventsForDisplay(events) {
+  const deduped = [];
   for (const row of events) {
-    if (row.text && row.at && !eventAtByText.has(row.text)) {
-      eventAtByText.set(row.text, row.at);
+    if (!row?.text) continue;
+    const prev = deduped[deduped.length - 1];
+    if (prev && prev.text === row.text) {
+      if (row.at && (!prev.at || new Date(row.at) < new Date(prev.at))) prev.at = row.at;
+      continue;
     }
+    deduped.push({ text: row.text, at: row.at || null });
+  }
+  return deduped;
+}
+
+function getSessionQueryItems(session) {
+  const events = dedupeQueryEventsForDisplay(
+    (session.userQueryEvents || []).filter((row) => row?.text)
+  );
+  const queries = (session.userQueries || []).filter(Boolean);
+
+  if (events.length) return events;
+
+  if (queries.length) {
+    return queries.map((text) => ({ text, at: null }));
   }
 
-  return sourceTexts.map((text, index) => ({
-    text,
-    at: events[index]?.at || eventAtByText.get(text) || null,
-  }));
+  const fallback = session.sessionTitle || session.promptPreview;
+  return fallback ? [{ text: fallback, at: null }] : [];
 }
 
 function formatSessionLabel(slug) {
@@ -82,7 +84,6 @@ function mergeSessionWithBilling(recentSessions, billingSessions) {
       billedTotalTokens: billing.billedTotalTokens,
       billedInputTokens: billing.billedInputTokens,
       billedOutputTokens: billing.billedOutputTokens,
-      billingRequestCount: billing.billingRequestCount,
       hasBilling: billing.hasBilling,
     };
   });
@@ -96,13 +97,35 @@ export default function TokenUsage() {
   const [billingLoading, setBillingLoading] = useState(false);
   const [error, setError] = useState(null);
   const [billingError, setBillingError] = useState(null);
+  const [billingWarning, setBillingWarning] = useState(null);
 
   const loadBilling = useCallback(() => {
     setBillingLoading(true);
     setBillingError(null);
+    setBillingWarning(null);
     return fetchBillingSessions({ days: 7 })
       .then((data) => {
         setBilling(data);
+        setSessions((prev) => mergeSessionWithBilling(prev, data.sessions));
+      })
+      .catch((err) => setBillingError(err.message))
+      .finally(() => setBillingLoading(false));
+  }, []);
+
+  const handleDownloadCsv = useCallback(() => {
+    setBillingLoading(true);
+    setBillingError(null);
+    setBillingWarning(null);
+    return downloadBillingCsv()
+      .then((data) => {
+        setBilling(data);
+        if (data.saveWarning) {
+          setBillingWarning(data.saveWarning);
+        } else if (data.filePath) {
+          setBillingWarning(`Đã lưu CSV: ${data.filePath}`);
+        } else {
+          setBillingWarning(null);
+        }
         setSessions((prev) => mergeSessionWithBilling(prev, data.sessions));
       })
       .catch((err) => setBillingError(err.message))
@@ -133,8 +156,8 @@ export default function TokenUsage() {
         <button className="btn-primary" onClick={load}>
           🔄 Refresh
         </button>
-        <button className="btn-secondary" onClick={loadBilling} disabled={billingLoading}>
-          {billingLoading ? "Đang tải billing..." : "💳 Tải token billing CSV"}
+        <button className="btn-secondary" onClick={handleDownloadCsv} disabled={billingLoading}>
+          {billingLoading ? "Đang tải CSV..." : "💳 Tải CSV"}
         </button>
       </div>
 
@@ -151,6 +174,10 @@ export default function TokenUsage() {
           <span className="billing-hint-sub">
             Đảm bảo bạn đã đăng nhập Cursor IDE. API sẽ tự đọc session từ state.vscdb.
           </span>
+        </div>
+      ) : billingWarning ? (
+        <div className="billing-hint">
+          ⚠️ {billingWarning}
         </div>
       ) : null}
 
@@ -179,14 +206,10 @@ export default function TokenUsage() {
                 </div>
                 <div className="token-summary-item">
                   <span className="token-summary-value">{usage.sessionCount ?? usage.runCount}</span>
-                  <span className="token-summary-label">Phiên chat</span>
+                  <span className="token-summary-label">Session</span>
                 </div>
               </div>
 
-              <p className="billing-hint">
-                Đã khớp {billing.matchedSessionCount}/{billing.mongoSessionCount} phiên Mongo với{" "}
-                {billing.csvEventCount} dòng CSV ({billing.unmatchedEventCount} dòng chưa gán session).
-              </p>
             </>
           ) : billingLoading ? (
             <p className="billing-hint">Đang tải token billing...</p>
@@ -198,9 +221,8 @@ export default function TokenUsage() {
         <>
           <h3 className="section-title">Phiên chat gần đây</h3>
           <p className="session-list-hint">
-            Mỗi dòng là một phiên chat hoàn chỉnh trong Cursor — gồm nhiều câu hỏi/trả lời liên tiếp.
+            Mỗi dòng là một Session hoàn chỉnh trong Cursor — gồm nhiều câu hỏi/trả lời liên tiếp.
             Thời gian bên cạnh mỗi câu hỏi là lúc bạn gửi, dùng để khớp với dashboard usage.
-            {billing ? " Token billing (💳) lấy từ CSV dashboard, khớp session theo thời gian gửi." : ""}
           </p>
           <div className="token-recent-list">
             {sessions.map((session) => (
@@ -208,7 +230,7 @@ export default function TokenUsage() {
                 <div className="session-main">
                   <div className="session-header">
                     <strong className="session-title">
-                      Phiên chat ({session.turnCount || session.userQueries?.length || 1} lượt)
+                      Session
                     </strong>
                     {session.hasBilling ? (
                       <div className="session-token-badges">
@@ -225,9 +247,6 @@ export default function TokenUsage() {
                     <span className="session-turn-badge">
                       {session.turnCount || 0} lượt hỏi đáp
                     </span>
-                    {session.billingRequestCount ? (
-                      <span className="internal-badge">{session.billingRequestCount} billing events</span>
-                    ) : null}
                     <span className="internal-badge">{formatSessionLabel(session.skillSlug)}</span>
                     {session.sessionEnded ? (
                       <span className="internal-badge session-status-closed">Đã đóng</span>

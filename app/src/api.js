@@ -3,7 +3,7 @@ const BASE = "/api/skills";
 async function handleResponse(res) {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `HTTP ${res.status}`);
+    throw new Error(body.message || body.error || `HTTP ${res.status}`);
   }
   return res.json();
 }
@@ -41,4 +41,8 @@ export function fetchBillingSessions({ days = 7, startDate, endDate } = {}) {
   if (startDate) params.set("startDate", startDate);
   if (endDate) params.set("endDate", endDate);
   return fetch(`/api/token-usage/billing/sessions?${params}`).then(handleResponse);
+}
+
+export function downloadBillingCsv() {
+  return fetch("/api/token-usage/billing/download-csv", { method: "POST" }).then(handleResponse);
 }

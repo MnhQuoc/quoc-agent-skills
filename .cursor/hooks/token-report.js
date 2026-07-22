@@ -2,7 +2,7 @@
 /**
  * Cursor hooks → API token usage.
  * - beforeSubmitPrompt: ghi timestamp thật khi user gửi câu hỏi (trước billing).
- * - afterAgentResponse / stop: cập nhật token ước lượng + trạng thái session.
+ * - afterAgentResponse / stop: cập nhật metadata session (câu hỏi, trạng thái).
  */
 
 const fs = require("fs/promises");
@@ -86,7 +86,7 @@ async function handleSessionUpdate(input, { sessionEnded = false } = {}) {
     skillSlug: CHAT_SESSION_SLUG,
     responseText: truncateText(responseText),
     userQueries: transcriptQueries.map((row) => row.text),
-    userQueryEvents: transcriptQueries,
+    userQueryEvents: transcriptQueries.filter((row) => row.at),
     turnCount,
     sessionEnded,
     status: sessionEnded ? "completed" : "in_progress",

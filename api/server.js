@@ -16,6 +16,7 @@ const {
   getRecentLogs,
   getRecentSessions,
   getBillingSessions,
+  downloadBillingCsv,
   upsertCursorIdeSession,
   recordUserQueryEvent,
   getSessionLog,
@@ -99,9 +100,8 @@ app.get("/api/token-usage/today", async (_req, res) => {
   }
 });
 
-// Nhận báo cáo token từ hook Cursor IDE (.cursor/hooks/token-report.js).
-// mode=session: upsert 1 bản ghi / conversation (tổng token cả phiên chat).
-// Token IDE vẫn là ước lượng từ toàn bộ transcript vì hooks không expose billing usage.
+// Nhận báo cáo session từ hook Cursor IDE (.cursor/hooks/token-report.js).
+// mode=session: upsert 1 bản ghi / conversation (metadata phiên chat, không lưu token).
 app.post("/api/token-usage/log", async (req, res) => {
   const {
     mode,
@@ -167,9 +167,6 @@ app.post("/api/token-usage/log", async (req, res) => {
     res.status(200).json({
       id: String(log._id),
       conversationId: log.runId,
-      totalTokens: log.totalTokens,
-      inputTokens: log.inputTokens,
-      outputTokens: log.outputTokens,
       turnCount: log.turnCount,
       sessionEnded: log.sessionEnded,
       skillSlug: log.skillSlug,
@@ -240,7 +237,16 @@ app.get("/api/token-usage/sessions", async (req, res) => {
   }
 });
 
-// Tải CSV billing từ Cursor Dashboard, khớp theo thời gian với session MongoDB.
+// Tải CSV billing từ Cursor Dashboard, lưu vào thư mục CSV/ (xóa file cũ trước).
+app.post("/api/token-usage/billing/download-csv", async (_req, res) => {
+  try {
+    res.json(await downloadBillingCsv());
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+// Khớp billing theo thời gian với session MongoDB (đọc trực tiếp từ Cursor API).
 app.get("/api/token-usage/billing/sessions", async (req, res) => {
   const days = Math.min(parseInt(req.query.days, 10) || 7, 90);
   const { startDate, endDate, tolerance, sessionBuffer } = req.query;
@@ -268,7 +274,10 @@ function handleError(res, err) {
     return res.status(err.status).json({ error: err.message });
   }
   console.error(err);
-  res.status(500).json({ error: "Internal server error", message: err.message });
+  res.status(500).json({
+    error: err.message || "Internal server error",
+    message: err.message || "Internal server error",
+  });
 }
 
 const PORT = process.env.API_PORT || 4322;
