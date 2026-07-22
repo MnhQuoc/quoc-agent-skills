@@ -59,22 +59,66 @@ cp -r quoc-agent-skills/skills/<ten-skill>  ./.cursor/skills/<ten-skill>   # the
 cp -r quoc-agent-skills/skills/<ten-skill>  ~/.cursor/skills/<ten-skill>   # dùng chung mọi project
 ```
 
-## Thêm skill mới
+## Chạy project
 
-1. Tạo thư mục `skills/<ten-skill>/SKILL.md`.
-2. Frontmatter bắt buộc có `name` và `description` (description nên nói rõ **khi nào** agent nên dùng skill này).
-3. Không cần sửa gì ở README hay chỗ khác — trang web local (`npm start`) và CLI `npx skills add ... --list` tự đọc lại `skills/` nên danh sách luôn tự cập nhật.
-4. Commit & push.
+### Yêu cầu
 
-```markdown
----
-name: ten-skill
-description: Mô tả skill làm gì và khi nào nên dùng.
----
+- **Node.js** 18+ (khuyến nghị LTS)
+- **MongoDB** — bắt buộc nếu chạy web app quản lý skill (API + React); không cần nếu chỉ xem trang static danh sách skill
 
-# Tên skill
+### Cài đặt
 
-Nội dung hướng dẫn cho agent...
+```bash
+git clone https://github.com/MnhQuoc/quoc-agent-skills.git
+cd quoc-agent-skills
+npm install
+cp .env.example .env   # Linux/macOS
+# copy .env.example .env   # Windows
+```
+
+Chỉnh file `.env` nếu cần (mặc định MongoDB: `mongodb://localhost:27017/quoc-agent-skills`, API cổng `4322`).
+
+Lần đầu dùng web app, import skill có sẵn trong `skills/` vào MongoDB:
+
+```bash
+npm run migrate
+```
+
+### Chế độ 1 — Trang static danh sách skill (nhẹ, không cần MongoDB)
+
+```bash
+npm start
+```
+
+Mở **http://localhost:4321** — trang đọc trực tiếp từ `site/skills.json` (tự sinh từ thư mục `skills/`).
+
+### Chế độ 2 — Web app quản lý skill (API + React)
+
+Cần MongoDB đang chạy. Mở **hai terminal** từ thư mục gốc repo:
+
+```bash
+# Terminal 1 — API backend (mặc định http://localhost:4322)
+npm run api
+
+# Terminal 2 — giao diện React (mặc định http://localhost:5173)
+npm run app
+```
+
+Mở địa chỉ Vite in ra (thường **http://localhost:5173**). Request `/api/*` được proxy sang API — không cần cấu hình CORS thêm.
+
+**Biến môi trường tùy chọn** (trong `.env`):
+
+| Biến | Mục đích |
+|------|----------|
+| `CURSOR_API_KEY` | Chạy skill workflow qua Cursor SDK (bắt đầu bằng `crsr_`) |
+| `CURSOR_SESSION_TOKEN` / `CURSOR_SESSION_COOKIE` | Theo dõi token usage từ Cursor Dashboard; có thể lấy bằng `npm run extract-session` |
+
+**Script hữu ích khác:**
+
+```bash
+npm run sync-cursor      # copy skills/ → .agents/skills/ (dùng skill qua /slug trong repo)
+npm run generate         # tái sinh site/skills.json
+npm run extract-session  # trích session Cursor từ state.vscdb
 ```
 
 ## Đồng bộ / cập nhật
