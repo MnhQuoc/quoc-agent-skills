@@ -146,6 +146,56 @@ button {
   cursor: not-allowed;
 }
 
+.btn-secondary {
+  background: #eef1ff;
+  color: #4c5fd7;
+  border: 1px solid #c9d1ff;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #dfe5ff;
+  transform: translateY(-2px);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.billing-hint {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f3f6ff;
+  color: #4a5568;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.billing-hint-error {
+  background: #fff8e6;
+  color: #8a6d1d;
+}
+
+.billing-hint-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.session-token-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.billing-badge {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
 .skill-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -393,6 +443,89 @@ button {
   border-left: 4px solid #667eea;
 }
 
+.session-row {
+  flex-direction: column;
+}
+
+.session-main {
+  width: 100%;
+}
+
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.session-title {
+  color: #333;
+  line-height: 1.4;
+}
+
+.session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.session-list-hint {
+  color: #777;
+  font-size: 0.9rem;
+  margin: -4px 0 12px;
+}
+
+.session-turn-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.12);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.session-status-active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.session-status-closed {
+  background: #eee;
+  color: #666;
+}
+
+.session-query-item {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 6px;
+  color: #444;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.session-query-index {
+  display: inline-block;
+  min-width: 1.4rem;
+  color: #667eea;
+  font-weight: 700;
+}
+
+.session-query-time {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #f0f3ff;
+  color: #5a67b8;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 .token-recent-row .skill-desc {
   margin: 4px 0 0;
   color: #777;
@@ -404,19 +537,6 @@ button {
   color: #999;
   font-weight: 600;
   white-space: nowrap;
-}
-
-.estimate-tag {
-  display: inline-block;
-  margin-left: 8px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: #777;
-  background: #eee;
-  border: 1px solid #ddd;
-  border-radius: 999px;
-  padding: 1px 8px;
-  vertical-align: middle;
 }
 
 .modal-code {

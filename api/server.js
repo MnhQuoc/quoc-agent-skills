@@ -11,13 +11,21 @@ const cors = require("cors");
 const { connectDB } = require("../lib/db");
 const { listSkills, getSkill, searchSkills, createSkill, SkillError } = require("../lib/skills");
 const { runSkill, WORKFLOW_SKILLS } = require("../lib/skillRunner");
-const { getTodayUsage, getRecentLogs, logCursorIdeUsage } = require("../lib/tokenUsage");
+const {
+  getTodayUsage,
+  getRecentLogs,
+  getRecentSessions,
+  getBillingSessions,
+  upsertCursorIdeSession,
+  recordUserQueryEvent,
+  getSessionLog,
+} = require("../lib/tokenUsage");
 const { watchSkillsDir, syncDeletedSkills } = require("../lib/watchSkills");
 const { generateManifest } = require("../scripts/generate-manifest");
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 
 async function refreshManifest() {
   try {
@@ -91,25 +99,124 @@ app.get("/api/token-usage/today", async (_req, res) => {
   }
 });
 
-// Nhận báo cáo token từ hook Cursor IDE (.cursor/hooks/token-report.js) khi user chạy
-// skill/chat trực tiếp trong Cursor, không qua @cursor/sdk. Token ở đây là ƯỚC LƯỢNG
-// (đếm bằng tokenizer trên text prompt/response lấy từ transcript), không phải số billing thật,
-// vì Cursor hooks không expose usage thật cho hook script.
+// Nhận báo cáo token từ hook Cursor IDE (.cursor/hooks/token-report.js).
+// mode=session: upsert 1 bản ghi / conversation (tổng token cả phiên chat).
+// Token IDE vẫn là ước lượng từ toàn bộ transcript vì hooks không expose billing usage.
 app.post("/api/token-usage/log", async (req, res) => {
-  const { skillSlug, promptText, responseText, status, model, conversationId } = req.body || {};
-  if (!promptText && !responseText) {
+  const {
+    mode,
+    skillSlug,
+    promptText,
+    responseText,
+    firstPrompt,
+    userQueries,
+    userQueryEvents,
+    queryAt,
+    turnCount,
+    sessionEnded,
+    durationMs,
+    status,
+    model,
+    conversationId,
+  } = req.body || {};
+
+  const hasSessionPayload =
+    mode === "session" &&
+    (turnCount || sessionEnded || userQueries?.length || userQueryEvents?.length);
+  if (!promptText && !responseText && !hasSessionPayload) {
     return res.status(400).json({ error: "promptText hoặc responseText là bắt buộc" });
   }
+  if (!conversationId) {
+    return res.status(400).json({ error: "conversationId là bắt buộc" });
+  }
+
   try {
-    const log = await logCursorIdeUsage({
-      skillSlug,
-      promptText,
-      responseText,
-      status,
-      model,
-      conversationId,
+    const log =
+      mode === "session"
+        ? await upsertCursorIdeSession({
+            conversationId,
+            skillSlug,
+            promptText,
+            responseText,
+            firstPrompt,
+            userQueries,
+            userQueryEvents,
+            queryAt,
+            turnCount,
+            sessionEnded,
+            durationMs,
+            status,
+            model,
+          })
+        : await upsertCursorIdeSession({
+            conversationId,
+            skillSlug,
+            promptText,
+            responseText,
+            firstPrompt: firstPrompt || promptText,
+            userQueries,
+            userQueryEvents,
+            queryAt,
+            turnCount: turnCount || 1,
+            sessionEnded: !!sessionEnded,
+            durationMs,
+            status,
+            model,
+          });
+
+    res.status(200).json({
+      id: String(log._id),
+      conversationId: log.runId,
+      totalTokens: log.totalTokens,
+      inputTokens: log.inputTokens,
+      outputTokens: log.outputTokens,
+      turnCount: log.turnCount,
+      sessionEnded: log.sessionEnded,
+      skillSlug: log.skillSlug,
     });
-    res.status(201).json({ id: String(log._id), totalTokens: log.totalTokens });
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+// Ghi timestamp thật khi user gửi prompt (hook beforeSubmitPrompt).
+app.post("/api/token-usage/query-event", async (req, res) => {
+  const { conversationId, promptText, at, skillSlug, model } = req.body || {};
+
+  if (!conversationId) {
+    return res.status(400).json({ error: "conversationId là bắt buộc" });
+  }
+  if (!promptText?.trim()) {
+    return res.status(400).json({ error: "promptText là bắt buộc" });
+  }
+
+  try {
+    const log = await recordUserQueryEvent({
+      conversationId,
+      promptText,
+      at,
+      skillSlug,
+      model,
+    });
+
+    res.status(200).json({
+      id: String(log._id),
+      conversationId: log.runId,
+      turnCount: log.turnCount,
+      userQueryEvents: log.userQueryEvents || [],
+    });
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+app.get("/api/token-usage/session/:conversationId", async (req, res) => {
+  try {
+    const log = await getSessionLog(req.params.conversationId);
+    if (!log) {
+      return res.status(404).json({ error: "Không tìm thấy session" });
+    }
+    res.json(log);
   } catch (err) {
     handleError(res, err);
   }
@@ -124,8 +231,40 @@ app.get("/api/token-usage/recent", async (req, res) => {
   }
 });
 
+app.get("/api/token-usage/sessions", async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+  try {
+    res.json(await getRecentSessions(limit));
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
+// Tải CSV billing từ Cursor Dashboard, khớp theo thời gian với session MongoDB.
+app.get("/api/token-usage/billing/sessions", async (req, res) => {
+  const days = Math.min(parseInt(req.query.days, 10) || 7, 90);
+  const { startDate, endDate, tolerance, sessionBuffer } = req.query;
+
+  try {
+    res.json(
+      await getBillingSessions({
+        days,
+        startDate,
+        endDate,
+        tolerance,
+        sessionBuffer,
+      })
+    );
+  } catch (err) {
+    handleError(res, err);
+  }
+});
+
 function handleError(res, err) {
   if (err instanceof SkillError) {
+    return res.status(err.status).json({ error: err.message });
+  }
+  if (err?.status && err.status >= 400 && err.status < 600) {
     return res.status(err.status).json({ error: err.message });
   }
   console.error(err);

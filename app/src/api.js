@@ -31,3 +31,14 @@ export function fetchTodayUsage() {
 export function fetchRecentLogs(limit = 10) {
   return fetch(`/api/token-usage/recent?limit=${limit}`).then(handleResponse);
 }
+
+export function fetchRecentSessions(limit = 15) {
+  return fetch(`/api/token-usage/sessions?limit=${limit}`).then(handleResponse);
+}
+
+export function fetchBillingSessions({ days = 7, startDate, endDate } = {}) {
+  const params = new URLSearchParams({ days: String(days) });
+  if (startDate) params.set("startDate", startDate);
+  if (endDate) params.set("endDate", endDate);
+  return fetch(`/api/token-usage/billing/sessions?${params}`).then(handleResponse);
+}

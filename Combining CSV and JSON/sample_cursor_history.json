@@ -1,0 +1,37 @@
+[
+  {
+    "composerId": "session-abc-001",
+    "messages": [
+      {
+        "type": "user",
+        "text": "Viết hàm sort array",
+        "createdAt": "2026-07-22T04:10:00.000Z"
+      },
+      {
+        "type": "assistant",
+        "text": "Đây là code...",
+        "createdAt": "2026-07-22T04:10:45.000Z"
+      },
+      {
+        "type": "user",
+        "text": "Thêm unit test",
+        "createdAt": "2026-07-22T04:12:30.000Z"
+      }
+    ]
+  },
+  {
+    "composerId": "session-xyz-002",
+    "messages": [
+      {
+        "type": "user",
+        "text": "Refactor API endpoint",
+        "createdAt": "2026-07-22T05:00:00.000Z"
+      },
+      {
+        "type": "assistant",
+        "text": "OK, đã refactor",
+        "createdAt": "2026-07-22T05:01:20.000Z"
+      }
+    ]
+  }
+]

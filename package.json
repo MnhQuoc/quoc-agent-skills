@@ -10,7 +10,9 @@
     "app": "npm run app:install && cd app && npm run dev",
     "app:install": "cd app && npm install",
     "migrate": "node scripts/migrate-to-mongo.js",
-    "sync-cursor": "node scripts/sync-to-cursor.js"
+    "sync-cursor": "node scripts/sync-to-cursor.js",
+    "extract-session": "node scripts/extract-cursor-session.js",
+    "repair-sessions": "node scripts/repair-vietnamese-sessions.js"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.23",

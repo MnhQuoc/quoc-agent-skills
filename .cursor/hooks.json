@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "node .cursor/hooks/token-report.js"
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "node .cursor/hooks/token-report.js"
+      }
+    ],
+    "stop": [
+      {
+        "command": "node .cursor/hooks/token-report.js"
+      }
+    ]
+  }
+}

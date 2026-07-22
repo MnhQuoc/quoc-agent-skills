@@ -1,38 +1,126 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchRecentLogs, fetchTodayUsage } from "../api";
+import { fetchBillingSessions, fetchRecentSessions, fetchTodayUsage } from "../api";
 
 function formatNumber(n) {
   return new Intl.NumberFormat("vi-VN").format(n || 0);
 }
 
-function formatDateTime(value) {
+function formatDateTime(value, { withSeconds = false } = {}) {
   if (!value) return "";
   return new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    ...(withSeconds ? { second: "2-digit" } : {}),
   }).format(new Date(value));
 }
 
-// Chỉ đọc & hiển thị token - không có nút chạy skill hay tạo gì ở đây.
+function getSessionQueryItems(session) {
+  const events = (session.userQueryEvents || []).filter((row) => row?.text);
+  const queries = (session.userQueries || []).filter(Boolean);
+  // Events từ hook beforeSubmitPrompt là UTF-8 đúng; transcript hay bị mojibake.
+  const sourceTexts = events.length
+    ? events.map((row) => row.text)
+    : queries.length
+      ? queries
+      : [];
+
+  if (!sourceTexts.length) {
+    const fallback = session.sessionTitle || session.promptPreview;
+    return fallback ? [{ text: fallback, at: null }] : [];
+  }
+
+  const eventAtByText = new Map();
+  for (const row of events) {
+    if (row.text && row.at && !eventAtByText.has(row.text)) {
+      eventAtByText.set(row.text, row.at);
+    }
+  }
+
+  return sourceTexts.map((text, index) => ({
+    text,
+    at: events[index]?.at || eventAtByText.get(text) || null,
+  }));
+}
+
+function formatSessionLabel(slug) {
+  if (slug === "cursor-chat") return "Chat thường";
+  return slug;
+}
+
+function truncateTitle(text, max = 120) {
+  if (!text) return "Phiên chat không có tiêu đề";
+  if (text.length <= max) return text;
+  return `${text.slice(0, max).trim()}…`;
+}
+
+function mergeSessionWithBilling(recentSessions, billingSessions) {
+  const billingMap = new Map(
+    (billingSessions || []).map((row) => [row.conversationId || row.id, row])
+  );
+
+  return recentSessions.map((session) => {
+    const billing =
+      billingMap.get(session.conversationId) ||
+      billingMap.get(session.runId) ||
+      billingMap.get(session.id);
+    if (!billing) return session;
+
+    const sessionItems = getSessionQueryItems(session);
+    const billingEvents = (billing.userQueryEvents || []).filter((row) => row?.text && row?.at);
+    const userQueryEvents =
+      sessionItems.length >= billingEvents.length
+        ? sessionItems.filter((row) => row.at)
+        : billingEvents.length
+          ? billingEvents
+          : sessionItems.filter((row) => row.at);
+
+    return {
+      ...session,
+      userQueryEvents: userQueryEvents.length ? userQueryEvents : session.userQueryEvents,
+      billedTotalTokens: billing.billedTotalTokens,
+      billedInputTokens: billing.billedInputTokens,
+      billedOutputTokens: billing.billedOutputTokens,
+      billingRequestCount: billing.billingRequestCount,
+      hasBilling: billing.hasBilling,
+    };
+  });
+}
+
 export default function TokenUsage() {
   const [usage, setUsage] = useState(null);
-  const [recent, setRecent] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [billing, setBilling] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [billingLoading, setBillingLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [billingError, setBillingError] = useState(null);
+
+  const loadBilling = useCallback(() => {
+    setBillingLoading(true);
+    setBillingError(null);
+    return fetchBillingSessions({ days: 7 })
+      .then((data) => {
+        setBilling(data);
+        setSessions((prev) => mergeSessionWithBilling(prev, data.sessions));
+      })
+      .catch((err) => setBillingError(err.message))
+      .finally(() => setBillingLoading(false));
+  }, []);
 
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    Promise.all([fetchTodayUsage(), fetchRecentLogs(15)])
+    Promise.all([fetchTodayUsage(), fetchRecentSessions(20)])
       .then(([today, logs]) => {
         setUsage(today);
-        setRecent(logs);
+        setSessions(logs);
+        return loadBilling();
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [loadBilling]);
 
   useEffect(() => {
     load();
@@ -45,6 +133,9 @@ export default function TokenUsage() {
         <button className="btn-primary" onClick={load}>
           🔄 Refresh
         </button>
+        <button className="btn-secondary" onClick={loadBilling} disabled={billingLoading}>
+          {billingLoading ? "Đang tải billing..." : "💳 Tải token billing CSV"}
+        </button>
       </div>
 
       {loading && (
@@ -54,75 +145,117 @@ export default function TokenUsage() {
         </div>
       )}
       {error && <div className="error">❌ Lỗi: {error}</div>}
+      {billingError ? (
+        <div className="billing-hint billing-hint-error">
+          ⚠️ Billing CSV: {billingError}
+          <span className="billing-hint-sub">
+            Đảm bảo bạn đã đăng nhập Cursor IDE. API sẽ tự đọc session từ state.vscdb.
+          </span>
+        </div>
+      ) : null}
 
       {usage && !loading && (
         <>
-          <div className="token-summary">
-            <div className="token-summary-item">
-              <span className="token-summary-value">{formatNumber(usage.totalTokens)}</span>
-              <span className="token-summary-label">Tổng token</span>
-            </div>
-            <div className="token-summary-item">
-              <span className="token-summary-value">{formatNumber(usage.inputTokens)}</span>
-              <span className="token-summary-label">Input</span>
-            </div>
-            <div className="token-summary-item">
-              <span className="token-summary-value">{formatNumber(usage.outputTokens)}</span>
-              <span className="token-summary-label">Output</span>
-            </div>
-            <div className="token-summary-item">
-              <span className="token-summary-value">{usage.runCount}</span>
-              <span className="token-summary-label">Lần chạy</span>
-            </div>
-          </div>
-
-          {usage.bySkill?.length > 0 && (
+          {billing ? (
             <>
-              <h3 className="section-title">Theo skill</h3>
-              <div className="skill-list">
-                {usage.bySkill.map((row) => (
-                  <div key={row.skillSlug} className="skill-item">
-                    <h3>{row.skillSlug}</h3>
-                    <div className="skill-footer">
-                      <span className="slug-badge">{formatNumber(row.totalTokens)} tok</span>
-                      <span className="internal-badge">{row.runCount} lần</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="token-summary">
+                <div className="token-summary-item">
+                  <span className="token-summary-value">
+                    {formatNumber(billing.totals?.billed?.totalTokens)}
+                  </span>
+                  <span className="token-summary-label">Tổng token</span>
+                </div>
+                <div className="token-summary-item">
+                  <span className="token-summary-value">
+                    {formatNumber(billing.totals?.billed?.inputTokens)}
+                  </span>
+                  <span className="token-summary-label">Input</span>
+                </div>
+                <div className="token-summary-item">
+                  <span className="token-summary-value">
+                    {formatNumber(billing.totals?.billed?.outputTokens)}
+                  </span>
+                  <span className="token-summary-label">Output</span>
+                </div>
+                <div className="token-summary-item">
+                  <span className="token-summary-value">{usage.sessionCount ?? usage.runCount}</span>
+                  <span className="token-summary-label">Phiên chat</span>
+                </div>
               </div>
+
+              <p className="billing-hint">
+                Đã khớp {billing.matchedSessionCount}/{billing.mongoSessionCount} phiên Mongo với{" "}
+                {billing.csvEventCount} dòng CSV ({billing.unmatchedEventCount} dòng chưa gán session).
+              </p>
             </>
-          )}
+          ) : billingLoading ? (
+            <p className="billing-hint">Đang tải token billing...</p>
+          ) : null}
         </>
       )}
 
-      {recent.length > 0 && !loading && (
+      {sessions.length > 0 && !loading && (
         <>
-          <h3 className="section-title">Gần đây</h3>
+          <h3 className="section-title">Phiên chat gần đây</h3>
+          <p className="session-list-hint">
+            Mỗi dòng là một phiên chat hoàn chỉnh trong Cursor — gồm nhiều câu hỏi/trả lời liên tiếp.
+            Thời gian bên cạnh mỗi câu hỏi là lúc bạn gửi, dùng để khớp với dashboard usage.
+            {billing ? " Token billing (💳) lấy từ CSV dashboard, khớp session theo thời gian gửi." : ""}
+          </p>
           <div className="token-recent-list">
-            {recent.map((log) => (
-              <div key={log.id} className="token-recent-row">
-                <div>
-                  <strong>{log.skillSlug}</strong>
-                  {log.estimated && (
-                    <span
-                      className="estimate-tag"
-                      title="Chạy trong Cursor IDE — token ước lượng, không phải số billing thật"
-                    >
-                      ~ước lượng
+            {sessions.map((session) => (
+              <div key={session.id} className="token-recent-row session-row">
+                <div className="session-main">
+                  <div className="session-header">
+                    <strong className="session-title">
+                      Phiên chat ({session.turnCount || session.userQueries?.length || 1} lượt)
+                    </strong>
+                    {session.hasBilling ? (
+                      <div className="session-token-badges">
+                        <span className="slug-badge billing-badge" title="Token từ CSV billing">
+                          💳 {formatNumber(session.billedTotalTokens)} tok
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="session-meta">
+                    <span className="log-time">
+                      {formatDateTime(session.updatedAt || session.createdAt)}
                     </span>
-                  )}
-                  <p className="skill-desc">
-                    <span className="log-time">{formatDateTime(log.createdAt)}</span> — {log.promptPreview}
-                  </p>
+                    <span className="session-turn-badge">
+                      {session.turnCount || 0} lượt hỏi đáp
+                    </span>
+                    {session.billingRequestCount ? (
+                      <span className="internal-badge">{session.billingRequestCount} billing events</span>
+                    ) : null}
+                    <span className="internal-badge">{formatSessionLabel(session.skillSlug)}</span>
+                    {session.sessionEnded ? (
+                      <span className="internal-badge session-status-closed">Đã đóng</span>
+                    ) : (
+                      <span className="internal-badge session-status-active">Đang chat</span>
+                    )}
+                  </div>
+                  {getSessionQueryItems(session).map((query, index) => (
+                      <p key={`${session.id}-${index}`} className="session-query-item">
+                        <span className="session-query-index">{index + 1}.</span>
+                        {query.at ? (
+                          <span className="session-query-time" title="Thời gian gửi câu hỏi">
+                            {formatDateTime(query.at, { withSeconds: true })}
+                          </span>
+                        ) : null}
+                        {truncateTitle(query.text, 160)}
+                      </p>
+                    ))}
                 </div>
-                <span className="slug-badge">{formatNumber(log.totalTokens)} tok</span>
               </div>
             ))}
           </div>
         </>
       )}
 
-      {!loading && !usage && !error && <p className="empty">Chưa có dữ liệu token nào.</p>}
+      {!loading && sessions.length === 0 && !error && (
+        <p className="empty">Chưa có phiên chat nào. Hãy chat trong Cursor IDE để thấy dữ liệu ở đây.</p>
+      )}
     </div>
   );
 }

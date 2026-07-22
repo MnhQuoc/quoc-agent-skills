@@ -1,0 +1,3 @@
+Session_ID,Session_Start,Session_End,User_Turns,First_Prompt,Total_Requests,Total_Tokens,Input_Tokens,Output_Tokens,Models,Matched_By_Window,Matched_By_Message
+session-abc-001,2026-07-22 04:10:00+00:00,2026-07-22 04:12:30+00:00,2,Viết hàm sort array,3,18600,16000,2600,claude-sonnet-4,3,0
+session-xyz-002,2026-07-22 05:00:00+00:00,2026-07-22 05:01:20+00:00,1,Refactor API endpoint,2,11200,9200,2000,claude-sonnet-4,2,0

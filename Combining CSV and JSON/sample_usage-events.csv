@@ -1,0 +1,6 @@
+Date,Model,Input (w/ Cache Write),Input (w/o Cache Write),Cache Read,Output Tokens,Total Tokens,Cost
+"2026-07-22T04:10:05.000Z","claude-sonnet-4","1000","5000","2000","800","8800","Included"
+"2026-07-22T04:10:50.000Z","claude-sonnet-4","500","3000","1000","1200","5700","Included"
+"2026-07-22T04:12:35.000Z","claude-sonnet-4","200","2500","800","600","4100","Included"
+"2026-07-22T05:00:10.000Z","claude-sonnet-4","800","4000","1500","900","7200","Included"
+"2026-07-22T05:01:25.000Z","claude-sonnet-4","300","2000","600","1100","4000","Included"
