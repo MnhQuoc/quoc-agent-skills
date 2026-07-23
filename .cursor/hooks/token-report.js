@@ -8,9 +8,9 @@
 const fs = require("fs/promises");
 const { extractUserQuery, parseTranscriptUserQueries } = require("../../lib/transcriptParse");
 const { normalizeQueryText } = require("../../lib/textEncoding");
+const { detectSkillSlugFromText } = require("../../lib/skillDetect");
 
 const API_BASE = process.env.TOKEN_USAGE_API || "http://localhost:4322";
-const CHAT_SESSION_SLUG = "cursor-chat";
 const MAX_RESPONSE_CHARS = 120_000;
 
 function truncateText(text, max = MAX_RESPONSE_CHARS) {
@@ -48,6 +48,14 @@ async function readTranscriptUserQueries(transcriptPath) {
   }
 }
 
+function resolveSkillSlugFromTexts(...texts) {
+  for (const text of texts) {
+    const slug = detectSkillSlugFromText(text);
+    if (slug) return slug;
+  }
+  return undefined;
+}
+
 async function handleBeforeSubmitPrompt(input) {
   const conversationId = input.conversation_id;
   const promptText = normalizeQueryText(extractUserQuery(input.prompt));
@@ -56,11 +64,13 @@ async function handleBeforeSubmitPrompt(input) {
     return;
   }
 
+  const skillSlug = resolveSkillSlugFromTexts(promptText);
+
   await postJson("/api/token-usage/query-event", {
     conversationId,
     promptText,
     at: new Date().toISOString(),
-    skillSlug: CHAT_SESSION_SLUG,
+    ...(skillSlug ? { skillSlug } : {}),
     model: input.model || "",
   });
 
@@ -75,6 +85,10 @@ async function handleSessionUpdate(input, { sessionEnded = false } = {}) {
   // gửi kèm để server tự chọn bản tốt hơn, tránh mất câu hỏi/timestamp của các lượt sau.
   const transcriptQueries = await readTranscriptUserQueries(input.transcript_path);
   const turnCount = transcriptQueries.length || undefined;
+  const skillSlug = resolveSkillSlugFromTexts(
+    normalizeQueryText(extractUserQuery(input.prompt)),
+    ...transcriptQueries.map((row) => row.text)
+  );
 
   if (!conversationId || (!responseText && !turnCount && !sessionEnded)) {
     return;
@@ -83,7 +97,7 @@ async function handleSessionUpdate(input, { sessionEnded = false } = {}) {
   await postJson("/api/token-usage/log", {
     mode: "session",
     conversationId,
-    skillSlug: CHAT_SESSION_SLUG,
+    ...(skillSlug ? { skillSlug } : {}),
     responseText: truncateText(responseText),
     userQueries: transcriptQueries.map((row) => row.text),
     userQueryEvents: transcriptQueries.filter((row) => row.at),

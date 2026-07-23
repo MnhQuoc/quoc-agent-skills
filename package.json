@@ -7,12 +7,14 @@
     "generate": "node scripts/generate-manifest.js",
     "start": "npm run generate && node server.js",
     "api": "node api/server.js",
+    "dev:all": "node scripts/run-dev.js",
     "app": "npm run app:install && cd app && npm run dev",
     "app:install": "cd app && npm install",
     "migrate": "node scripts/migrate-to-mongo.js",
     "sync-cursor": "node scripts/sync-to-cursor.js",
     "extract-session": "node scripts/extract-cursor-session.js",
-    "repair-sessions": "node scripts/repair-vietnamese-sessions.js"
+    "repair-sessions": "node scripts/repair-vietnamese-sessions.js",
+    "repair-imports": "node scripts/repair-imported-sessions.js"
   },
   "dependencies": {
     "@cursor/sdk": "^1.0.23",

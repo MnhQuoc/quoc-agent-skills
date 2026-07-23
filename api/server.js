@@ -5,6 +5,7 @@
 
 require("dotenv").config();
 
+const fs = require("fs");
 const express = require("express");
 const cors = require("cors");
 
@@ -13,10 +14,12 @@ const { listSkills, getSkill, searchSkills, createSkill, SkillError } = require(
 const { runSkill, WORKFLOW_SKILLS } = require("../lib/skillRunner");
 const {
   getTodayUsage,
+  getUsageByDate,
   getRecentLogs,
   getRecentSessions,
   getBillingSessions,
   downloadBillingCsv,
+  getSavedCsvFilePath,
   upsertCursorIdeSession,
   recordUserQueryEvent,
   getSessionLog,
@@ -92,9 +95,10 @@ app.post("/api/workflow/run", async (req, res) => {
   }
 });
 
-app.get("/api/token-usage/today", async (_req, res) => {
+app.get("/api/token-usage/today", async (req, res) => {
   try {
-    res.json(await getTodayUsage());
+    const date = req.query.date;
+    res.json(date ? await getUsageByDate(date) : await getTodayUsage());
   } catch (err) {
     handleError(res, err);
   }
@@ -147,6 +151,7 @@ app.post("/api/token-usage/log", async (req, res) => {
             durationMs,
             status,
             model,
+            skipStaleImport: true,
           })
         : await upsertCursorIdeSession({
             conversationId,
@@ -163,6 +168,10 @@ app.post("/api/token-usage/log", async (req, res) => {
             status,
             model,
           });
+
+    if (!log) {
+      return res.status(204).end();
+    }
 
     res.status(200).json({
       id: String(log._id),
@@ -237,10 +246,34 @@ app.get("/api/token-usage/sessions", async (req, res) => {
   }
 });
 
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true });
+});
+
+// Tải file CSV đã lưu trên server (trình duyệt sẽ download về máy).
+app.get("/api/token-usage/billing/csv-file", (_req, res) => {
+  const filePath = getSavedCsvFilePath();
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({
+      error: "Chưa có file CSV. Bấm Tải CSV trước.",
+    });
+  }
+  res.download(filePath, "usage-events.csv");
+});
+
 // Tải CSV billing từ Cursor Dashboard, lưu vào thư mục CSV/ (xóa file cũ trước).
-app.post("/api/token-usage/billing/download-csv", async (_req, res) => {
+app.post("/api/token-usage/billing/download-csv", async (req, res) => {
+  const { startDate, endDate, days, useBillingCycle } = req.body || {};
+  const parsedDays = days != null ? Math.min(parseInt(days, 10) || 7, 90) : undefined;
   try {
-    res.json(await downloadBillingCsv());
+    res.json(
+      await downloadBillingCsv({
+        startDate: startDate != null ? Number(startDate) : undefined,
+        endDate: endDate != null ? Number(endDate) : undefined,
+        days: parsedDays,
+        useBillingCycle: useBillingCycle !== false,
+      })
+    );
   } catch (err) {
     handleError(res, err);
   }
@@ -249,7 +282,7 @@ app.post("/api/token-usage/billing/download-csv", async (_req, res) => {
 // Khớp billing theo thời gian với session MongoDB (đọc trực tiếp từ Cursor API).
 app.get("/api/token-usage/billing/sessions", async (req, res) => {
   const days = Math.min(parseInt(req.query.days, 10) || 7, 90);
-  const { startDate, endDate, tolerance, sessionBuffer } = req.query;
+  const { startDate, endDate, tolerance, sessionBuffer, useLocalCsv } = req.query;
 
   try {
     res.json(
@@ -259,6 +292,7 @@ app.get("/api/token-usage/billing/sessions", async (req, res) => {
         endDate,
         tolerance,
         sessionBuffer,
+        useLocalCsv: useLocalCsv === "1" || useLocalCsv === "true",
       })
     );
   } catch (err) {

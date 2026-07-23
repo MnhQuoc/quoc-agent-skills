@@ -131,6 +131,15 @@ button {
   font-size: 1rem;
 }
 
+button:focus {
+  outline: none;
+}
+
+button:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
 .btn-primary {
   background: #667eea;
   color: white;
@@ -194,6 +203,117 @@ button {
 .billing-badge {
   background: #e8f5e9;
   color: #1b5e20;
+}
+
+.billing-badge-clickable {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.billing-badge-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(27, 94, 32, 0.18);
+}
+
+
+.token-breakdown-grid {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.token-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  color: #334155;
+}
+
+.token-breakdown-row strong {
+  color: #111827;
+}
+
+.token-breakdown-total {
+  background: #eef2ff;
+}
+
+.token-breakdown-cost {
+  background: #ecfdf5;
+}
+
+.token-events-table-wrap {
+  margin-bottom: 16px;
+}
+
+.token-events-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  table-layout: fixed;
+}
+
+.token-events-table th,
+.token-events-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-events-table th:first-child,
+.token-events-table td:first-child {
+  width: 11%;
+  text-align: left;
+}
+
+.token-events-table th:nth-child(2),
+.token-events-table td:nth-child(2) {
+  width: 14%;
+  text-align: left;
+}
+
+.token-events-table th:nth-child(n + 3):nth-child(-n + 7),
+.token-events-table td:nth-child(n + 3):nth-child(-n + 7) {
+  width: 10%;
+}
+
+.token-events-table th:last-child,
+.token-events-table td:last-child {
+  width: 11%;
+}
+
+@media (max-width: 900px) {
+  .modal-content.token-billing-modal {
+    width: 100%;
+    max-width: 100%;
+    padding: 20px 16px;
+  }
+
+  .token-events-table-wrap {
+    overflow-x: auto;
+  }
+
+  .token-events-table {
+    table-layout: auto;
+    min-width: 720px;
+  }
+
+  .token-events-table th,
+  .token-events-table td {
+    white-space: nowrap;
+  }
+}
+
+.token-events-table th {
+  background: #f3f4f6;
+  color: #374151;
+  font-weight: 600;
 }
 
 .skill-list {
@@ -314,6 +434,34 @@ button {
   gap: 10px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.controls button {
+  height: 38px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.date-picker-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.date-picker-label input {
+  min-width: 150px;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 0.9rem;
+  line-height: 1;
 }
 
 .status-info {
@@ -357,6 +505,12 @@ button {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
+.modal-content.token-billing-modal {
+  max-width: min(1180px, 96vw);
+  width: min(1180px, 96vw);
+  padding: 28px 32px;
+}
+
 .modal-close {
   position: absolute;
   top: 16px;
@@ -393,6 +547,46 @@ button {
   color: #333;
   font-size: 1.1rem;
   margin-bottom: 10px;
+}
+
+.billing-turn-hint {
+  margin-top: -4px;
+  margin-bottom: 14px;
+}
+
+.billing-turn-group {
+  margin-bottom: 18px;
+}
+
+.billing-turn-group:last-child {
+  margin-bottom: 0;
+}
+
+.billing-turn-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  background: #f3f5ff;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.billing-turn-prompt {
+  flex: 1 1 180px;
+  color: #555;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.billing-turn-count {
+  color: #667eea;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .section-title {
